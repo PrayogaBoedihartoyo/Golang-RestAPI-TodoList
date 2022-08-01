@@ -11,5 +11,12 @@ import (
 func main() {
 	router := router.Router()
 	fmt.Println("Application is running...")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	server := http.Server{
+		Addr:    "localhost:8000",
+		Handler: router,
+	}
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

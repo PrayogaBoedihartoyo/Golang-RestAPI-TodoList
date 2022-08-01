@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
+	"log"
 	"main/helper"
 	"net/http"
 )
@@ -14,10 +15,18 @@ var (
 	secretkey string = "secretkeyjwt"
 )
 
+type AuthMiddleware struct {
+	handler http.Handler
+}
+
+func NewAuthMiddleware(handler http.Handler) *AuthMiddleware {
+	return &AuthMiddleware{handler: handler}
+}
+
 // check whether user is authorized or not
 func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		w.Header().Set("Content-Type", "application/json")
 		if r.Header["Token"] == nil {
 			var err helper.Error
 			err = helper.SetError(err, "No Token Found")
@@ -42,11 +51,7 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			if claims["role"] == "admin" {
-				r.Header.Set("Role", "admin")
-				handler.ServeHTTP(w, r)
-				return
-			}
+			log.Println(claims)
 		}
 		var reserr helper.Error
 		reserr = helper.SetError(reserr, "Not Authorized.")
