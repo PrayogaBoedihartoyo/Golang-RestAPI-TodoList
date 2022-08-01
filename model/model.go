@@ -3,9 +3,12 @@ package model
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"main/config"
+	"main/helper"
+	"net/http"
 )
 
 type Todo struct {
@@ -14,28 +17,114 @@ type Todo struct {
 	Description string `json:"description"`
 }
 
-func CreateTodo(todo Todo) int64 {
+type User struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-	// mengkoneksikan ke db postgres
+type Authentication struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func SignUp(w http.ResponseWriter, r *http.Request) {
 	db := config.CreateConnection()
+	defer db.Close()
 
-	// kita tutup koneksinya di akhir proses
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		var err helper.Error
+		err = helper.SetError(err, "Error in reading payload.")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	user.Password, err = helper.GeneratehashPassword(user.Password)
+	if err != nil {
+		log.Fatalln("Error in password hashing.")
+	}
+	//connection.Create(&user)
+	sqlStatement := `INSERT INTO users (email, password) VALUES ($1, $2) `
+	ctx := context.Background()
+	_, err = db.ExecContext(ctx, sqlStatement, user.Email, user.Password)
+	if err != nil {
+		var err helper.Error
+		err = helper.SetError(err, "Data already used.")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+func SignIn(w http.ResponseWriter, r *http.Request) {
+	db := config.CreateConnection()
+	defer db.Close()
+
+	var RequestUser Authentication
+
+	err := json.NewDecoder(r.Body).Decode(&RequestUser)
+	if err != nil {
+		var err helper.Error
+		err = helper.SetError(err, "Error in reading payload.")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	var user User
+	db.QueryRow("select email,password from users").Scan(&user.Email, &user.Password)
+
+	if user.Email == "" {
+		var err helper.Error
+		err = helper.SetError(err, "Username or Password is incorrect/gaboleh kosong")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	check := helper.CheckPasswordHash(RequestUser.Password, user.Password)
+
+	if !check {
+		var err helper.Error
+		err = helper.SetError(err, "Username or Password is incorrect/salah")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	validToken, err := helper.GenerateJWT(user.Email)
+	if err != nil {
+		var err helper.Error
+		err = helper.SetError(err, "Failed to generate token")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	var token helper.Token
+	token.Email = user.Email
+	token.TokenString = validToken
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(token)
+}
+
+func CreateTodo(todo Todo) int64 {
+	db := config.CreateConnection()
 	defer db.Close()
 
 	sqlStatement := `INSERT INTO todo (status, description) VALUES ($1, $2) `
 
-	// id yang dimasukkan akan disimpan di id ini
 	var id int64
 	ctx := context.Background()
-	// Scan function akan menyimpan insert id didalam id id
-	db.ExecContext(ctx, sqlStatement, todo.Status, todo.Description)
-	//if err != nil {
-	//	log.Fatalf("Tidak Bisa mengeksekusi query. %v", err)
-	//}
+	_, err := db.ExecContext(ctx, sqlStatement, todo.Status, todo.Description)
+	if err != nil {
+		log.Fatalf("cannot execute query. %v", err)
+	}
 
-	fmt.Printf("Insert data single record %v", id)
-
-	// return insert id
 	return id
 }
 
@@ -46,9 +135,8 @@ func FindAllTodo() ([]Todo, error) {
 	sqlStatement := `SELECT * FROM todo`
 
 	rows, err := db.Query(sqlStatement)
-
 	if err != nil {
-		log.Fatalf("tidak bisa mengeksekusi query. %v", err)
+		log.Fatalf("cannot execute query. %v", err)
 	}
 
 	defer rows.Close()
@@ -58,7 +146,7 @@ func FindAllTodo() ([]Todo, error) {
 		var todo Todo
 		err = rows.Scan(&todo.Id, &todo.Status, &todo.Description)
 		if err != nil {
-			log.Fatalf("tidak bisa mengambil data. %v", err)
+			log.Fatalf("cannot get data. %v", err)
 		}
 		todos = append(todos, todo)
 	}
@@ -78,12 +166,12 @@ func FindTodo(id int64) (Todo, error) {
 
 	switch err {
 	case sql.ErrNoRows:
-		fmt.Println("Tidak ada data yang dicari!")
+		fmt.Println("there is no data!")
 		return todo, nil
 	case nil:
 		return todo, nil
 	default:
-		log.Fatalf("tidak bisa mengambil data. %v", err)
+		log.Fatalf("cannot get data %v", err)
 	}
 
 	return todo, err
@@ -98,15 +186,15 @@ func UpdateTodo(id int64, todo Todo) int64 {
 	res, err := db.Exec(sqlStatement, id, todo.Status, todo.Description)
 
 	if err != nil {
-		log.Fatalf("Tidak bisa mengeksekusi query. %v", err)
+		log.Fatalf("cannot execute query. %v", err)
 	}
 	rowsAffected, err := res.RowsAffected()
 
 	if err != nil {
-		log.Fatalf("Error ketika mengecheck rows/data yang diupdate. %v", err)
+		log.Fatalf("Error Update data. %v", err)
 	}
 
-	fmt.Printf("Total rows/record yang diupdate %v\n", rowsAffected)
+	fmt.Printf("Data updated %v\n", rowsAffected)
 
 	return rowsAffected
 }
@@ -120,16 +208,16 @@ func DeleteTodo(id int64) int64 {
 	res, err := db.Exec(sqlStatement, id)
 
 	if err != nil {
-		log.Fatalf("tidak bisa mengeksekusi query. %v", err)
+		log.Fatalf("cannot execute query. %v", err)
 	}
 
 	rowsAffected, err := res.RowsAffected()
 
 	if err != nil {
-		log.Fatalf("tidak bisa mencari data. %v", err)
+		log.Fatalf("there is no data. %v", err)
 	}
 
-	fmt.Printf("Total data yang terhapus %v", rowsAffected)
+	fmt.Printf("data deleted %v", rowsAffected)
 
 	return rowsAffected
 }

@@ -25,63 +25,45 @@ type Response struct {
 }
 
 func CreateTodo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var todo model.Todo
-
-	// decode data json request ke todo
 	err := json.NewDecoder(r.Body).Decode(&todo)
-
 	if err != nil {
-		log.Fatalf("Tidak bisa mendecode dari request body.  %v", err)
+		log.Fatalf("Error decode data object.  %v", err)
 	}
-
-	// panggil modelsnya lalu insert buku
 	insertID := model.CreateTodo(todo)
 
-	// format response objectnya
 	res := response{
 		Id:      insertID,
-		Message: "Data buku telah ditambahkan",
+		Message: "Data has been created",
 	}
 
-	// kirim response
 	json.NewEncoder(w).Encode(res)
 }
 
-// AmbilBuku mengambil single data dengan parameter id
 func FindTodo(w http.ResponseWriter, r *http.Request) {
-	// kita set headernya
-	w.Header().Set("Context-Type", "application/x-www-form-urlencoded")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	// dapatkan idbuku dari parameter request, keynya adalah "id"
+	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
-	// konversi id dari tring ke int
 	id, err := strconv.Atoi(params["id"])
-
 	if err != nil {
-		log.Fatalf("Tidak bisa mengubah dari string ke int.  %v", err)
+		log.Fatalf("cannot convert to int.  %v", err)
 	}
-
-	// memanggil models ambilsatubuku dengan parameter id yg nantinya akan mengambil single data
 	todo, err := model.FindTodo(int64(id))
 
 	if err != nil {
-		log.Fatalf("Tidak bisa mengambil data buku. %v", err)
+		log.Fatalf("Cannot get Todo. %v", err)
 	}
 
-	// kirim response
 	json.NewEncoder(w).Encode(todo)
 }
 
-// Ambil semua data buku
 func FindAllTodo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Context-Type", "application/x-www-form-urlencoded")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	// memanggil models AmbilSemuaBuku
+	w.Header().Set("Content-Type", "application/json")
 	todos, err := model.FindAllTodo()
 
 	if err != nil {
-		log.Fatalf("Tidak bisa mengambil data. %v", err)
+		log.Fatalf("cannot get data. %v", err)
 	}
 
 	var response Response
@@ -89,72 +71,51 @@ func FindAllTodo(w http.ResponseWriter, r *http.Request) {
 	response.Message = "Success"
 	response.Data = todos
 
-	// kirim semua response
 	json.NewEncoder(w).Encode(response)
 }
 
 func UpdateTodo(w http.ResponseWriter, r *http.Request) {
-
-	// kita ambil request parameter idnya
+	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-
-	// konversikan ke int yang sebelumnya adalah string
 	id, err := strconv.Atoi(params["id"])
-
 	if err != nil {
-		log.Fatalf("Tidak bisa mengubah dari string ke int.  %v", err)
+		log.Fatalf("cannot convert string to int.  %v", err)
 	}
 
-	// buat variable buku dengan type models.Buku
 	var todo model.Todo
 
-	// decode json request ke variable buku
 	err = json.NewDecoder(r.Body).Decode(&todo)
-
 	if err != nil {
-		log.Fatalf("Tidak bisa decode request body.  %v", err)
+		log.Fatalf("cannot decode object.  %v", err)
 	}
 
-	// panggil updatebuku untuk mengupdate data
 	updatedRows := model.UpdateTodo(int64(id), todo)
+	msg := fmt.Sprintf("Todo updated. Todo %v", updatedRows)
 
-	// ini adalah format message berupa string
-	msg := fmt.Sprintf("Buku telah berhasil diupdate. Jumlah yang diupdate %v rows/record", updatedRows)
-
-	// ini adalah format response message
 	res := response{
 		Id:      int64(id),
 		Message: msg,
 	}
 
-	// kirim berupa response
 	json.NewEncoder(w).Encode(res)
 }
 
 func DeleteTodo(w http.ResponseWriter, r *http.Request) {
-
-	// kita ambil request parameter idnya
+	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
-	// konversikan ke int yang sebelumnya adalah string
 	id, err := strconv.Atoi(params["id"])
-
 	if err != nil {
-		log.Fatalf("Tidak bisa mengubah dari string ke int.  %v", err)
+		log.Fatalf("cannot convert string to int.  %v", err)
 	}
 
-	// panggil fungsi hapusbuku , dan convert int ke int64
 	deletedRows := model.DeleteTodo(int64(id))
 
-	// ini adalah format message berupa string
-	msg := fmt.Sprintf("buku sukses di hapus. Total data yang dihapus %v", deletedRows)
-
-	// ini adalah format reponse message
+	msg := fmt.Sprintf("Todo deleted %v", deletedRows)
 	res := response{
 		Id:      int64(id),
 		Message: msg,
 	}
 
-	// send the response
 	json.NewEncoder(w).Encode(res)
 }

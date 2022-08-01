@@ -3,12 +3,15 @@ package router
 import (
 	"github.com/gorilla/mux"
 	"main/controller"
+	"main/model"
 )
 
 func Router() *mux.Router {
 
 	router := mux.NewRouter()
 
+	router.HandleFunc("/api/signup", model.SignUp).Methods("POST")
+	router.HandleFunc("/api/signin", model.SignIn).Methods("POST")
 	router.HandleFunc("/api/todo", controller.FindAllTodo).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/todo/{id}", controller.FindTodo).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/todo", controller.CreateTodo).Methods("POST", "OPTIONS")

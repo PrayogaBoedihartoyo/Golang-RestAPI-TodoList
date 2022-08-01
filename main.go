@@ -9,10 +9,7 @@ import (
 )
 
 func main() {
-	r := router.Router()
-	// fs := http.FileServer(http.Dir("build"))
-	// http.Handle("/", fs)
-	fmt.Println("Server dijalankan pada port 8000...")
-
-	log.Fatal(http.ListenAndServe(":8000", r))
+	router := router.Router()
+	fmt.Println("Application is running...")
+	log.Fatal(http.ListenAndServe(":8000", router))
 }
