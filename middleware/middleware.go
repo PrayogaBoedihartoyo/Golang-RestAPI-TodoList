@@ -15,14 +15,6 @@ var (
 	secretkey string = "secretkeyjwt"
 )
 
-type AuthMiddleware struct {
-	handler http.Handler
-}
-
-func NewAuthMiddleware(handler http.Handler) *AuthMiddleware {
-	return &AuthMiddleware{handler: handler}
-}
-
 // check whether user is authorized or not
 func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

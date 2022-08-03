@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
+	"main/helper"
 	"main/model"
 	"net/http"
 	"strconv"
@@ -18,10 +19,10 @@ type response struct {
 }
 
 type Response struct {
-	Status      string       `json:"status"`
-	Message     string       `json:"message"`
-	Description string       `json:"description"`
-	Data        []model.Todo `json:"todo"`
+	Status      string      `json:"status"`
+	Message     string      `json:"message"`
+	Description string      `json:"description"`
+	Data        interface{} `json:"todo"`
 }
 
 func CreateTodo(w http.ResponseWriter, r *http.Request) {
@@ -50,12 +51,28 @@ func FindTodo(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("cannot convert to int.  %v", err)
 	}
 	todo, err := model.FindTodo(int64(id))
-
 	if err != nil {
-		log.Fatalf("Cannot get Todo. %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+
+		webResponse := response{
+			Status:      "Data gak ada",
+			Description: "Mau cari apa ?",
+			Message:     "NOT FOUND",
+		}
+		w.Header().Add("Content-Type", "application/json")
+		encoder := json.NewEncoder(w)
+		encoder.Encode(webResponse)
+		return
+	}
+	res := Response{
+		Status:      "Succesfully",
+		Message:     "You Got it",
+		Description: "Nice Work",
+		Data:        todo,
 	}
 
-	json.NewEncoder(w).Encode(todo)
+	json.NewEncoder(w).Encode(res)
 }
 
 func FindAllTodo(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +106,15 @@ func UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("cannot decode object.  %v", err)
 	}
 
+	_, err = model.FindTodo(int64(id))
+	if err != nil {
+		var err helper.Error
+		err = helper.SetError(err, "There is no data record")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
 	updatedRows := model.UpdateTodo(int64(id), todo)
 	msg := fmt.Sprintf("Todo updated. Todo %v", updatedRows)
 
@@ -107,6 +133,15 @@ func DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		log.Fatalf("cannot convert string to int.  %v", err)
+	}
+
+	_, err = model.FindTodo(int64(id))
+	if err != nil {
+		var err helper.Error
+		err = helper.SetError(err, "There is no data record")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(err)
+		return
 	}
 
 	deletedRows := model.DeleteTodo(int64(id))

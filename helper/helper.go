@@ -28,6 +28,14 @@ var (
 	secretkey string = "secretkeyjwt"
 )
 
+type NotFoundError struct {
+	Error string
+}
+
+func NewNotFoundError(error string) NotFoundError {
+	return NotFoundError{Error: error}
+}
+
 // set error message in Error struct
 func SetError(err Error, message string) Error {
 	err.IsError = true
@@ -63,4 +71,11 @@ func GenerateJWT(email string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func PanicHandler() {
+	rec := recover()
+	if rec != nil {
+		fmt.Println("RECOVER", rec)
+	}
 }

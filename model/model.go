@@ -2,8 +2,8 @@ package model
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"main/config"
@@ -156,25 +156,44 @@ func FindAllTodo() ([]Todo, error) {
 
 func FindTodo(id int64) (Todo, error) {
 	db := config.CreateConnection()
-	defer db.Close()
+	sqlStatement := "SELECT id, status, description FROM todo WHERE id = $1"
+	rows, err := db.Query(sqlStatement, id)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
 
-	var todo Todo
-	sqlStatement := `SELECT * FROM todo WHERE id=$1`
-
-	row := db.QueryRow(sqlStatement, id)
-	err := row.Scan(&todo.Id, &todo.Status, &todo.Description)
-
-	switch err {
-	case sql.ErrNoRows:
-		fmt.Println("there is no data!")
+	todo := Todo{}
+	if rows.Next() {
+		err := rows.Scan(&todo.Id, &todo.Status, &todo.Description)
+		if err != nil {
+			panic(err)
+		}
 		return todo, nil
-	case nil:
-		return todo, nil
-	default:
-		log.Fatalf("cannot get data %v", err)
+	} else {
+		return todo, errors.New("todo is not found")
 	}
 
-	return todo, err
+	//db := config.CreateConnection()
+	//defer db.Close()
+	//
+	//var todo Todo
+	//sqlStatement := `SELECT * FROM todo WHERE id=$1`
+	//
+	//row := db.QueryRow(sqlStatement, id)
+	//err := row.Scan(&todo.Id, &todo.Status, &todo.Description)
+	//
+	//switch err {
+	//case sql.ErrNoRows:
+	//	return todo, errors.New("There is no data record")
+	//case nil:
+	//	return todo, nil
+	//default:
+	//	log.Fatalf("cannot get data %v", err)
+	//}
+	//
+	//return todo, err
+
 }
 
 func UpdateTodo(id int64, todo Todo) int64 {
@@ -210,14 +229,8 @@ func DeleteTodo(id int64) int64 {
 	if err != nil {
 		log.Fatalf("cannot execute query. %v", err)
 	}
-
 	rowsAffected, err := res.RowsAffected()
-
-	if err != nil {
-		log.Fatalf("there is no data. %v", err)
-	}
-
-	fmt.Printf("data deleted %v", rowsAffected)
+	//fmt.Printf("data deleted %v", rowsAffected)
 
 	return rowsAffected
 }
