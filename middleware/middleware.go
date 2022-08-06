@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
-	"log"
 	"main/helper"
 	"net/http"
 )
@@ -42,15 +41,8 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		claims, ok := token.Claims.(jwt.MapClaims);
-		if ok && token.Valid {
-			var reserr helper.Error
-			reserr = helper.SetError(reserr, "Not Authorized.")
-			json.NewEncoder(w).Encode(err)
-			return
+		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			handler.ServeHTTP(w, r)
 		}
-		log.Println(claims)
-		handler.ServeHTTP(w, r)
-		return
 	}
 }

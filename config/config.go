@@ -10,12 +10,10 @@ func CreateConnection() *sql.DB {
 		panic(err)
 	}
 
-	// check the connection
 	err = db.Ping()
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Println("Successfully connected to Database!")
-	// return the connection
+
 	return db
 }

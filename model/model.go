@@ -45,16 +45,12 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln("Error in password hashing.")
 	}
-	//connection.Create(&user)
+
 	sqlStatement := `INSERT INTO users (email, password) VALUES ($1, $2) `
 	ctx := context.Background()
 	_, err = db.ExecContext(ctx, sqlStatement, user.Email, user.Password)
 	if err != nil {
-		var err helper.Error
-		err = helper.SetError(err, "Data already used.")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(err)
-		return
+		panic(err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
@@ -74,7 +70,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err)
 		return
 	}
-
+	
 	var user User
 	db.QueryRow("select email,password from users").Scan(&user.Email, &user.Password)
 
@@ -173,26 +169,6 @@ func FindTodo(id int64) (Todo, error) {
 	} else {
 		return todo, errors.New("todo is not found")
 	}
-
-	//db := config.CreateConnection()
-	//defer db.Close()
-	//
-	//var todo Todo
-	//sqlStatement := `SELECT * FROM todo WHERE id=$1`
-	//
-	//row := db.QueryRow(sqlStatement, id)
-	//err := row.Scan(&todo.Id, &todo.Status, &todo.Description)
-	//
-	//switch err {
-	//case sql.ErrNoRows:
-	//	return todo, errors.New("There is no data record")
-	//case nil:
-	//	return todo, nil
-	//default:
-	//	log.Fatalf("cannot get data %v", err)
-	//}
-	//
-	//return todo, err
 
 }
 

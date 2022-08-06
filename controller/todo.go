@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"main/helper"
@@ -35,8 +34,10 @@ func CreateTodo(w http.ResponseWriter, r *http.Request) {
 	insertID := model.CreateTodo(todo)
 
 	res := response{
-		Id:      insertID,
-		Message: "Data has been created",
+		Id:          insertID,
+		Status:      "Successfully",
+		Description: todo.Status,
+		Message:     "Data Has been Created",
 	}
 
 	json.NewEncoder(w).Encode(res)
@@ -116,11 +117,12 @@ func UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updatedRows := model.UpdateTodo(int64(id), todo)
-	msg := fmt.Sprintf("Todo updated. Todo %v", updatedRows)
 
 	res := response{
-		Id:      int64(id),
-		Message: msg,
+		Id:          updatedRows,
+		Status:      todo.Status,
+		Description: todo.Description,
+		Message:     "Successfully",
 	}
 
 	json.NewEncoder(w).Encode(res)
@@ -146,10 +148,11 @@ func DeleteTodo(w http.ResponseWriter, r *http.Request) {
 
 	deletedRows := model.DeleteTodo(int64(id))
 
-	msg := fmt.Sprintf("Todo deleted %v", deletedRows)
 	res := response{
-		Id:      int64(id),
-		Message: msg,
+		Id:          deletedRows,
+		Status:      "200",
+		Description: "todo has been delete",
+		Message:     "Successfully",
 	}
 
 	json.NewEncoder(w).Encode(res)
