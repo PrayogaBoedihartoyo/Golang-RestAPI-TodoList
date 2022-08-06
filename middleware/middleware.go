@@ -14,7 +14,6 @@ var (
 	secretkey string = "secretkeyjwt"
 )
 
-// check whether user is authorized or not
 func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -26,14 +25,12 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		var mySigningKey = []byte(secretkey)
-
 		token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("There was an error in parsing token.")
 			}
 			return mySigningKey, nil
 		})
-
 		if err != nil {
 			var err helper.Error
 			err = helper.SetError(err, "Your Token has been expired.")
@@ -41,8 +38,14 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			handler.ServeHTTP(w, r)
+		_, ok := token.Claims.(jwt.MapClaims)
+		if !ok && !token.Valid {
+			var err helper.Error
+			err = helper.SetError(err, "Not Authorized.")
+			json.NewEncoder(w).Encode(err)
+			return
 		}
+
+		handler.ServeHTTP(w, r)
 	}
 }
