@@ -46,7 +46,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln("Error in password hashing.")
 	}
 
-	sqlStatement := `INSERT INTO users (email, password) VALUES ($1, $2) `
+	sqlStatement := `INSERT INTO users (email, password) VALUES ($1, $2)`
 	ctx := context.Background()
 	_, err = db.ExecContext(ctx, sqlStatement, user.Email, user.Password)
 	if err != nil {
@@ -70,7 +70,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err)
 		return
 	}
-	
+
 	var user User
 	db.QueryRow("select email,password from users").Scan(&user.Email, &user.Password)
 

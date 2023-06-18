@@ -9,11 +9,11 @@ import (
 )
 
 func main() {
-	router := router.Router()
-	fmt.Println("Application is running...")
+	r := router.Router()
+	fmt.Println("Application is running at http://localhost:8000")
 	server := http.Server{
 		Addr:    "localhost:8000",
-		Handler: router,
+		Handler: r,
 	}
 	err := server.ListenAndServe()
 	if err != nil {
