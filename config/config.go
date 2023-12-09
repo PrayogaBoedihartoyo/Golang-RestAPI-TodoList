@@ -5,7 +5,7 @@ import (
 )
 
 func CreateConnection() *sql.DB {
-	db, err := sql.Open("postgres", "user=postgres password=7L2HKhn.gDa=+gu host=db.fbehvmvhrduojiyrrwhi.supabase.co port=5432 dbname=postgres")
+	db, err := sql.Open("postgres", "user=postgres password=postgres host=localhost port=5432 dbname=postgres sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
