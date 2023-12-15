@@ -32,30 +32,22 @@ type NotFoundError struct {
 	Error string
 }
 
-func NewNotFoundError(error string) NotFoundError {
-	return NotFoundError{Error: error}
-}
-
-// set error message in Error struct
 func SetError(err Error, message string) Error {
 	err.IsError = true
 	err.Message = message
 	return err
 }
 
-// take password as input and generate new hash password from it
 func GeneratehashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
-// compare plain password with hash password
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
-// Generate JWT token
 func GenerateJWT(email string) (string, error) {
 	var mySigningKey = []byte(secretkey)
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -71,11 +63,4 @@ func GenerateJWT(email string) (string, error) {
 	}
 
 	return tokenString, nil
-}
-
-func PanicHandler() {
-	rec := recover()
-	if rec != nil {
-		fmt.Println("RECOVER", rec)
-	}
 }
